@@ -43,6 +43,7 @@ ________________________________________________________________________________
 #include <Util/include/config.h>
 #include <Util/include/convert.h>
 #include <Util/include/args.h>
+#include <Util/types/encrypted_shared_ptr.h>
 
 
 namespace LLP
@@ -815,7 +816,7 @@ namespace LLP
         SecureString PIN = session.GetActivePIN()->PIN();
 
         /* Attempt to get the sigchain. */
-        const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& pSigChain = session.GetAccount();
+        const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> pSigChain = session.GetAccount();
         if(!pSigChain)
         {
             debug::error(FUNCTION, "Couldn't get the unlocked sigchain");
@@ -900,7 +901,7 @@ namespace LLP
             SecureString PIN = session.GetActivePIN()->PIN();
 
             /* Attempt to get the sigchain. */
-            const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& pSigChain = session.GetAccount();
+            const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> pSigChain = session.GetAccount();
             if(!pSigChain)
                 return debug::error(FUNCTION, "Couldn't get the unlocked sigchain");
 
@@ -1011,7 +1012,7 @@ namespace LLP
             TAO::API::Session& session = TAO::API::GetSessionManager().Get(0, false);
 
             /* Attempt to get the sigchain. */
-            const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& pSigChain = session.GetAccount();
+            const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> pSigChain = session.GetAccount();
             if(!pSigChain)
                 return debug::error(FUNCTION, "Couldn't get the unlocked sigchain");
 

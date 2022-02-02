@@ -73,7 +73,7 @@ namespace TAO
                 PURGE_THREAD.join();
 
             /* Lock session mutex one last time before clearing the sessions */
-            LOCK(MUTEX);
+            RECURSIVE(MUTEX);
 
             /* Clear all sessions */
             mapSessions.clear();
@@ -83,7 +83,7 @@ namespace TAO
         /* Creates and returns a new session */
         Session& SessionManager::Add(const TAO::Ledger::SignatureChain& pUser, const SecureString& strPin)
         {
-            LOCK(MUTEX);
+            RECURSIVE(MUTEX);
 
             /* If not in multiuser mode check that there is not already a session with ID 0 */
             if(!config::fMultiuser.load() && mapSessions.count(0) != 0)
@@ -102,7 +102,7 @@ namespace TAO
         /* Decrypts and loads an existing session from disk */
         Session& SessionManager::Load(const uint256_t& hashGenesis, const SecureString& strPin)
         {
-            LOCK(MUTEX);
+            RECURSIVE(MUTEX);
 
             /* If not in multiuser mode check that there is not already a session with ID 0 */
             if(!config::fMultiuser.load() && mapSessions.count(0) != 0)
@@ -131,7 +131,7 @@ namespace TAO
         /* Remove a session from the manager */
         void SessionManager::Remove(const uint256_t& hashSession)
         {
-            LOCK(MUTEX);
+            RECURSIVE(MUTEX);
 
             if(mapSessions.count(hashSession) == 0)
                 throw Exception(-11, "User not logged in");
@@ -143,17 +143,14 @@ namespace TAO
         /* Returns a session instance by session id */
         Session& SessionManager::Get(const uint256_t& hashSession, bool fLogActivity)
         {
-            /* Lock the mutex before checking that it exists and then updating the last active time  */
-            {
-                LOCK(MUTEX);
+            RECURSIVE(MUTEX);
 
-                if(mapSessions.count(hashSession) == 0)
-                    throw Exception(-11, "User not logged in");
+            if(mapSessions.count(hashSession) == 0)
+                throw Exception(-11, "User not logged in");
 
-                /* Update the activity if requested */
-                if(fLogActivity)
-                    mapSessions[hashSession].SetLastActive();
-            }
+            /* Update the activity if requested */
+            if(fLogActivity)
+                mapSessions[hashSession].SetLastActive();
 
             /* Return the session.  NOTE: we do this outside of the braces where the mutex is locked as we need to guarantee that
                the lock is released before returning.  Failure to do this can lead to deadlocks if subsequent methods are called on
@@ -166,7 +163,7 @@ namespace TAO
         /* Checks to see if the session ID exists in session map */
         bool SessionManager::Has(const uint256_t& hashSession)
         {
-            LOCK(MUTEX);
+            RECURSIVE(MUTEX);
             return mapSessions.count(hashSession) > 0;
         }
 
@@ -174,7 +171,7 @@ namespace TAO
         /* Returns the number of active sessions in the session map */
         uint32_t SessionManager::Size()
         {
-            LOCK(MUTEX);
+            RECURSIVE(MUTEX);
             return mapSessions.size();
         }
 
@@ -182,7 +179,7 @@ namespace TAO
         /* Destroys all sessions and removes them */
         void SessionManager::Clear()
         {
-            LOCK(MUTEX);
+            RECURSIVE(MUTEX);
             mapSessions.clear();
         }
 
@@ -203,7 +200,7 @@ namespace TAO
 
                 {
                     /* lock the session mutex so that we can check the timeout state of each */
-                    LOCK(MUTEX);
+                    RECURSIVE(MUTEX);
 
                     /* Delete any sessions where the last activity time is earlier than nTimeout minutes ago */
                     auto it = mapSessions.begin();

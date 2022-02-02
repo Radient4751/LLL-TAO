@@ -30,6 +30,7 @@ ________________________________________________________________________________
 #include <Util/include/config.h>
 #include <Util/include/debug.h>
 #include <Util/include/runtime.h>
+#include <Util/types/encrypted_shared_ptr.h>
 
 #include <cmath>
 
@@ -154,7 +155,7 @@ namespace TAO
 
 
         /* Create the coinstake transaction for a solo Proof of Stake block and add it as the candidate block producer */
-        bool TritiumMinter::CreateCoinstake(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user,
+        bool TritiumMinter::CreateCoinstake(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user,
                                             const SecureString& strPIN)
         {
             static uint32_t nCounter = 0; //Prevents log spam during wait period
@@ -281,7 +282,7 @@ namespace TAO
 
 
         /* Initialize the staking process for solo Proof of Stake and call HashBlock() to perform block hashing */
-        void TritiumMinter::MintBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN)
+        void TritiumMinter::MintBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN)
         {
             /* This are checked here before minting and after setting up the block/calculating weights so that all staking metrics
              * continue to be updated during a wait. This way, anyone who retrieves and display metrics will see them

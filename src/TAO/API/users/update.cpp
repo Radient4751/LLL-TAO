@@ -27,6 +27,8 @@ ________________________________________________________________________________
 
 #include <TAO/Operation/include/enum.h>
 
+#include <Util/types/encrypted_shared_ptr.h>
+
 /* Global TAO namespace. */
 namespace TAO
 {
@@ -132,7 +134,7 @@ namespace TAO
             LOCK(session.CREATE_MUTEX);
 
             /* Create a temp sig chain to check the credentials again */
-            memory::encrypted_ptr<TAO::Ledger::SignatureChain> userUpdated =
+            util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> userUpdated =
                 new TAO::Ledger::SignatureChain(session.GetAccount()->UserName(), strPassword);
 
             /* Create the update transaction */
@@ -149,20 +151,14 @@ namespace TAO
 
             /* Update the sig chain with the new password if it has changed */
             if(strNewPassword != strPassword)
-            {
-                userUpdated.free();
                 userUpdated = new TAO::Ledger::SignatureChain(session.GetAccount()->UserName(), strNewPassword);
-            }
 
             /* Update the Crypto keys with the new pin */
             update_crypto_keys(userUpdated, strNewPin, tx);
 
             /* Calculate the prestates and poststates. */
             if(!tx.Build())
-            {
-                userUpdated.free();
                 throw Exception(-30, "Operations failed to execute");
-            }
 
             /* The private key to sign with.  This will either be a key based on the previous pin, OR if the recovery is being changed
                it will be the previous hashRecovery */
@@ -204,40 +200,27 @@ namespace TAO
 
             /* Sign the transaction . */
             if(!tx.Sign(hashSecret))
-            {
-                userUpdated.free();
                 throw Exception(-31, "Ledger failed to sign transaction");
-            }
-
 
             /* Execute the operations layer. */
             if(!TAO::Ledger::mempool.Accept(tx))
-            {
-                userUpdated.free();
                 throw Exception(-32, "Failed to accept");
-            }
 
+            /* Update the Password */
+            session.UpdatePassword(strNewPassword);
+
+            /* Update the cached txid used for auth */
+            session.hashAuth = tx.GetHash();
+
+            /* Update the cached pin in memory with the new pin */
+            if(session.GetActivePIN() != nullptr && !session.GetActivePIN()->PIN().empty())
             {
+                /* Get the existing unlocked actions so that we can maintain them */
+                const uint8_t nUnlockedActions =
+                    session.GetActivePIN()->UnlockedActions();
 
-                /* Update the Password */
-                session.UpdatePassword(strNewPassword);
-
-                /* Update the cached txid used for auth */
-                session.hashAuth = tx.GetHash();
-
-                /* Update the cached pin in memory with the new pin */
-                if(!session.GetActivePIN().IsNull() && !session.GetActivePIN()->PIN().empty())
-                {
-                    /* Get the existing unlocked actions so that we can maintain them */
-                    uint8_t nUnlockedActions = session.GetActivePIN()->UnlockedActions();
-
-                    session.UpdatePIN(strNewPin, nUnlockedActions);
-                }
-
-                /* free the temp sig chain we used for updating */
-                userUpdated.free();
+                session.UpdatePIN(strNewPin, nUnlockedActions);
             }
-
 
             /* Add the transaction ID to the response */
             jsonRet["txid"]  = tx.GetHash().ToString();
@@ -248,7 +231,7 @@ namespace TAO
 
         /* Generates new keys in the Crypto object register for a signature chain, using the specified pin, and adds the update
         *  contract to the transaction. */
-        void Users::update_crypto_keys(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN, TAO::Ledger::Transaction& tx )
+        void Users::update_crypto_keys(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN, TAO::Ledger::Transaction& tx )
         {
             /* Generate register address for crypto register deterministically */
             TAO::Register::Address hashCrypto = TAO::Register::Address(std::string("crypto"), user->Genesis(), TAO::Register::Address::CRYPTO);

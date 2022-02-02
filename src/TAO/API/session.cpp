@@ -23,6 +23,8 @@ ________________________________________________________________________________
 
 #include <LLD/include/global.h>
 
+#include <Util/types/encrypted_shared_ptr.h>
+
 /* Global TAO namespace. */
 namespace TAO
 {
@@ -43,7 +45,7 @@ namespace TAO
         , nAuthAttempts         (0)
         , pSigChain             ()
         , pActivePIN            ()
-        , nNetworkKey           (0)
+        , pNetworkKey           (0)
         {
         }
 
@@ -59,7 +61,7 @@ namespace TAO
         , nAuthAttempts         (session.nAuthAttempts.load())
         , pSigChain             (std::move(session.pSigChain))
         , pActivePIN            (std::move(session.pActivePIN))
-        , nNetworkKey           (std::move(session.nNetworkKey))
+        , pNetworkKey           (std::move(session.pNetworkKey))
         {
         }
 
@@ -76,30 +78,26 @@ namespace TAO
             nAuthAttempts     = (session.nAuthAttempts.load());
             pSigChain         = (std::move(session.pSigChain));
             pActivePIN        = (std::move(session.pActivePIN));
-            nNetworkKey       = (std::move(session.nNetworkKey));
+            pNetworkKey       = (std::move(session.pNetworkKey));
 
             return *this;
         }
 
+
         /* Default Destructor. */
         Session::~Session()
         {
-            /* Free up values in encrypted memory */
-            if(!pSigChain.IsNull())
-                pSigChain.free();
+            //RECURSIVE(MUTEX);
 
-            if(!pActivePIN.IsNull())
-                pActivePIN.free();
-
-            if(!nNetworkKey.IsNull())
-                nNetworkKey.free();
+            nStarted = 0;
         }
+
 
         /* Initializes the session from username / password / pin */
         void Session::Initialize(const TAO::Ledger::SignatureChain& pUser, const SecureString& strPin, const uint256_t& nSessionID)
         {
             {
-                LOCK(MUTEX);
+                RECURSIVE(MUTEX);
 
                 /* Set the session ID */
                 nID = nSessionID;
@@ -136,8 +134,10 @@ namespace TAO
 
 
         /* Returns the active PIN for this session. */
-        const memory::encrypted_ptr<TAO::Ledger::PinUnlock>& Session::GetActivePIN() const
+        const util::atomic::encrypted_shared_ptr<TAO::Ledger::PinUnlock> Session::GetActivePIN() const
         {
+            //RECURSIVE(MUTEX);
+
             return pActivePIN;
         }
 
@@ -145,22 +145,17 @@ namespace TAO
         /* Clears the active PIN for this session. */
         void Session::ClearActivePIN()
         {
-            LOCK(MUTEX);
+            //RECURSIVE(MUTEX); //XXX: this mutex is redundant since our ptr is atomic
 
-            /* Clean up the existing pin */
-            if(!pActivePIN.IsNull())
-                pActivePIN.free();
+            /* Setting pointer to null will ready it to free later. */
+            pActivePIN  = nullptr;
         }
 
 
         /* Updates the cached pin and its unlocked actions */
         void Session::UpdatePIN(const SecureString& strPin, uint8_t nUnlockedActions)
         {
-            LOCK(MUTEX);
-
-            /* Clean up the existing pin */
-            if(!pActivePIN.IsNull())
-                pActivePIN.free();
+            //RECURSIVE(MUTEX);
 
             /* Instantiate new pin */
             pActivePIN = new TAO::Ledger::PinUnlock(strPin, nUnlockedActions);
@@ -170,12 +165,10 @@ namespace TAO
         /* Updates the password stored in the internal sig chain */
         void Session::UpdatePassword(const SecureString& strPassword)
         {
-            LOCK(MUTEX);
+            //RECURSIVE(MUTEX);
 
             /* Get the existing username so that we can use it for the new sig chain */
             SecureString strUsername = pSigChain->UserName();
-            /* Clear the existing sig chain pointer */
-            pSigChain.free();
 
             /* Instantate a new one with the existing username and the new password */
             pSigChain = new TAO::Ledger::SignatureChain(strUsername, strPassword);
@@ -185,22 +178,23 @@ namespace TAO
         /* Returns the cached network private key. */
         uint512_t Session::GetNetworkKey() const
         {
-            /* Lazily generate the network key the first time it is requested */
-            if(nNetworkKey.IsNull() && !pActivePIN.IsNull())
-                /* Generate and cache the network private key */
-                 nNetworkKey = new memory::encrypted_type<uint512_t>(pSigChain->Generate("network", 0, pActivePIN->PIN()));
+            //RECURSIVE(MUTEX);
 
-            if(nNetworkKey.IsNull())
+            /* Lazily generate the network key the first time it is requested */
+            if(!pNetworkKey && pActivePIN != nullptr) //XXX: this is bad practice
+                pNetworkKey = new memory::encrypted_type<uint512_t>(pSigChain->Generate("network", 0, pActivePIN->PIN()));
+
+            if(!pNetworkKey)
                 return 0;
 
-            return nNetworkKey->DATA;
+            return pNetworkKey->DATA;
         }
 
 
         /* Logs activity by updating the last active timestamp. */
         void Session::SetLastActive()
         {
-            LOCK(MUTEX);
+            RECURSIVE(MUTEX);
             nLastActive = runtime::unifiedtimestamp();
         }
 
@@ -208,19 +202,17 @@ namespace TAO
         /* Gets last active timestamp. */
         uint64_t Session::GetLastActive() const
         {
+            RECURSIVE(MUTEX);
             return nLastActive;
         }
-
-
-
 
 
         /* Determine if the Users are locked. */
         bool Session::Locked() const
         {
-            LOCK(MUTEX);
+            //RECURSIVE(MUTEX);
 
-            if(pActivePIN.IsNull() || pActivePIN->PIN().empty())
+            if(!pActivePIN || pActivePIN->PIN().empty())
                 return true;
 
             return false;
@@ -230,9 +222,9 @@ namespace TAO
         /* Checks that the active sig chain has been unlocked to allow transactions. */
         bool Session::CanTransact() const
         {
-            LOCK(MUTEX);
+            //RECURSIVE(MUTEX);
 
-            if(!pActivePIN.IsNull() && pActivePIN->CanTransact())
+            if(pActivePIN != nullptr && pActivePIN->CanTransact())
                 return true;
 
             return false;
@@ -242,9 +234,9 @@ namespace TAO
         /* Checks that the active sig chain has been unlocked to allow mining */
         bool Session::CanMine() const
         {
-            LOCK(MUTEX);
+            //RECURSIVE(MUTEX);
 
-            if(!config::fMultiuser.load() && (!pActivePIN.IsNull() && pActivePIN->CanMine()))
+            if(!config::fMultiuser.load() && (pActivePIN != nullptr && pActivePIN->CanMine()))
                 return true;
 
             return false;
@@ -254,9 +246,9 @@ namespace TAO
         /* Checks that the active sig chain has been unlocked to allow staking */
         bool Session::CanStake() const
         {
-            LOCK(MUTEX);
+            //RECURSIVE(MUTEX);
 
-            if(!config::fMultiuser.load() &&(!pActivePIN.IsNull() && pActivePIN->CanStake()))
+            if(!config::fMultiuser.load() &&(pActivePIN != nullptr && pActivePIN->CanStake()))
                 return true;
 
             return false;
@@ -265,9 +257,9 @@ namespace TAO
         /* Checks that the active sig chain has been unlocked to allow notifications to be processed */
         bool Session::CanProcessNotifications() const
         {
-            LOCK(MUTEX);
+            //RECURSIVE(MUTEX);
 
-            if(!pActivePIN.IsNull() && pActivePIN->ProcessNotifications())
+            if(pActivePIN != nullptr && pActivePIN->ProcessNotifications())
                 return true;
 
             return false;
@@ -275,8 +267,10 @@ namespace TAO
 
 
         /*  Returns the sigchain the account logged in. */
-        const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& Session::GetAccount() const
+        const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> Session::GetAccount() const
         {
+            //RECURSIVE(MUTEX);
+
             return pSigChain;
         }
 
@@ -291,6 +285,8 @@ namespace TAO
         /*  Increments the number of incorrect authentication attempts made in this session */
         void Session::IncrementAuthAttempts()
         {
+            //RECURSIVE(MUTEX);
+
             /* If the number of failed auth attempts exceeds the configured allowed number then log this user out */
             if(++nAuthAttempts >= config::GetArg("-authattempts", 3))
             {
@@ -299,6 +295,7 @@ namespace TAO
 
                 /* Log the user out and terminate all relevant actions. */
                 Commands::Get<Users>()->TerminateSession(hashSession);
+
                 throw Exception(-290, "Too many invalid password/pin attempts. Logging out user session: ", hashSession.ToString());
             }
         }
@@ -323,8 +320,8 @@ namespace TAO
             ssData << nAuthAttempts.load();
 
             /* XXX: Assess why this is here, looks redundant. */
-            if(!nNetworkKey.IsNull())
-                ssData << nNetworkKey->DATA;
+            if(!!pNetworkKey)
+                ssData << pNetworkKey->DATA;
             else
                 ssData << uint512_t(0);
 
@@ -406,7 +403,7 @@ namespace TAO
                 uint512_t nKey;
                 ssData >> nKey;
                 if(nKey != 0)
-                    nNetworkKey = new memory::encrypted_type<uint512_t>(nKey);
+                    pNetworkKey = new memory::encrypted_type<uint512_t>(nKey);
 
                 ssData >> hashAuth;
 

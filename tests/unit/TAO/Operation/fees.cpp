@@ -16,6 +16,7 @@
 #include <TAO/Register/include/enum.h>
 #include <TAO/Register/types/address.h>
 
+#include <Util/types/encrypted_shared_ptr.h>
 
 #include <unit/catch2/catch.hpp>
 
@@ -33,7 +34,7 @@ TEST_CASE( "Transaction fee Tests", "[operation]")
     config::fHybrid = false;
 
     /* Create a sig chain to use for these tests */
-    memory::encrypted_ptr<TAO::Ledger::SignatureChain> user = new TAO::Ledger::SignatureChain(strUsername, strPassword);
+    util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> user = new TAO::Ledger::SignatureChain(strUsername, strPassword);
 
     /* store the genesis hash for later use */
     uint256_t hashGenesis = user->Genesis();

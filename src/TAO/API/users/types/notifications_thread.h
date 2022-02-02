@@ -46,7 +46,7 @@ namespace TAO
          *  Processes notifications for a subset of logged in sessions.
          *
          **/
-        class NotificationsThread 
+        class NotificationsThread
         {
 
         public:
@@ -73,7 +73,7 @@ namespace TAO
              *  Adds a session ID to be processed by this thread
              *
              *  @param[in] nSession The session ID to process notifications for
-             * 
+             *
              **/
             void Add(const uint256_t& nSession);
 
@@ -83,7 +83,7 @@ namespace TAO
              *  Removes a session ID from the list processed by this thread
              *
              *  @param[in] nSession The session ID to remove
-             * 
+             *
              **/
             void Remove(const uint256_t& nSession);
 
@@ -93,15 +93,15 @@ namespace TAO
              *  Checks to see if session ID is being processed by this thread
              *
              *  @param[in] nSession The session ID to search for
-             * 
+             *
              **/
             bool Has(const uint256_t& nSession) const;
 
 
             /** Ssssion ID's that this thread is responsible for processing notifications for **/
-            std::vector<uint256_t> SESSIONS;
+            std::set<uint256_t> SESSIONS;
 
-            
+
 
           private:
 
@@ -119,7 +119,7 @@ namespace TAO
 
             /** The condition variable to awaken sleeping notification thread. **/
             std::condition_variable CONDITION;
-            
+
 
             /** The sigchain notifications processing thread. **/
             std::thread NOTIFICATIONS_THREAD;
@@ -132,14 +132,14 @@ namespace TAO
              **/
             void Thread();
 
-            
+
 
             /** auto_process_notifications
             *
             *  Process notifications for the currently logged in user(s)
             *
             *  @param[in] nSession The session ID to process notifications for
-            * 
+            *
             **/
             void auto_process_notifications(const uint256_t& nSession);
 

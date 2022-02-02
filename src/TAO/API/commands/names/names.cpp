@@ -221,8 +221,8 @@ namespace TAO
             Session& session = Commands::Get<Users>()->GetSession(params, false);
 
             /* Get the account. */
-            const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user = session.GetAccount();
-            if(!user.IsNull())
+            const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> user = session.GetAccount();
+            if(!user)
             {
                 /* Set the namespace name to be the user's genesis ID */
                 hashNamespace = user->Genesis();

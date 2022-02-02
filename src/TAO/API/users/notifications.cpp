@@ -55,6 +55,7 @@ ________________________________________________________________________________
 
 #include <Util/include/hex.h>
 #include <Util/include/debug.h>
+#include <Util/types/encrypted_shared_ptr.h>
 
 #include <Legacy/include/evaluate.h>
 
@@ -1167,7 +1168,7 @@ namespace TAO
             Session& session = Commands::Get<Users>()->GetSession(jParams, true, fLogActivity);
 
             /* Get the account. */
-            const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user = session.GetAccount();
+            const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> user = session.GetAccount();
             if(!user)
                 throw Exception(-10, "Invalid session ID");
 
@@ -1553,6 +1554,9 @@ namespace TAO
             }
             catch(const Exception& ex)
             {
+                /* Log the error */
+                debug::error(FUNCTION, ex.what());
+
                 /* Suppress this notification for 10 x the notifications interval, so by default it will be retried after 50s */
                 uint64_t nSuppress = config::GetArg("-notificationsinterval", 5) * 10;
 

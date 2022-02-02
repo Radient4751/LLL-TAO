@@ -35,7 +35,7 @@ namespace TAO
             Session& session = GetSession(params);
 
             /* Check if already unlocked. */
-            if(session.GetActivePIN().IsNull() || (!session.GetActivePIN().IsNull() && session.GetActivePIN()->PIN() == ""))
+            if(session.GetActivePIN() == nullptr || (!session.GetActivePIN() && session.GetActivePIN()->PIN() == ""))
                 throw Exception(-132, "Account already locked");
 
             /* The current unlock actions */
@@ -49,7 +49,7 @@ namespace TAO
                 if(strMint == "1" || strMint == "true")
                 {
                      /* Check if already locked. */
-                    if(!session.GetActivePIN().IsNull() && !session.GetActivePIN()->CanMine())
+                    if(session.GetActivePIN() != nullptr && !session.GetActivePIN()->CanMine())
                         throw Exception(-196, "Account already locked for mining");
                     else
                         nUnlockedActions &= ~TAO::Ledger::PinUnlock::UnlockActions::MINING;
@@ -64,7 +64,7 @@ namespace TAO
                 if(strMint == "1" || strMint == "true")
                 {
                      /* Check if already locked. */
-                    if(!session.GetActivePIN().IsNull() && !session.GetActivePIN()->CanStake())
+                    if(session.GetActivePIN() != nullptr && !session.GetActivePIN()->CanStake())
                         throw Exception(-197, "Account already locked for staking");
                     else
                         nUnlockedActions &= ~TAO::Ledger::PinUnlock::UnlockActions::STAKING;
@@ -79,7 +79,7 @@ namespace TAO
                 if(strTransactions == "1" || strTransactions == "true")
                 {
                      /* Check if already unlocked. */
-                    if(!session.GetActivePIN().IsNull() && !session.GetActivePIN()->CanTransact())
+                    if(session.GetActivePIN() != nullptr && !session.GetActivePIN()->CanTransact())
                         throw Exception(-198, "Account already locked for transactions");
                     else
                         nUnlockedActions &= ~TAO::Ledger::PinUnlock::UnlockActions::TRANSACTIONS;
@@ -94,7 +94,7 @@ namespace TAO
                 if(strNotifications == "1" || strNotifications == "true")
                 {
                      /* Check if already unlocked. */
-                    if(!session.GetActivePIN().IsNull() && !session.GetActivePIN()->ProcessNotifications())
+                    if(session.GetActivePIN() != nullptr && !session.GetActivePIN()->ProcessNotifications())
                         throw Exception(-199, "Account already locked for notifications");
                     else
                         nUnlockedActions &= ~TAO::Ledger::PinUnlock::UnlockActions::NOTIFICATIONS;
@@ -118,7 +118,7 @@ namespace TAO
             }
 
             /* Stop the stake minter if it is no longer unlocked for staking */
-            if(session.GetActivePIN().IsNull() || (!(nUnlockedActions & TAO::Ledger::PinUnlock::UnlockActions::STAKING)))
+            if(session.GetActivePIN() != nullptr || (!(nUnlockedActions & TAO::Ledger::PinUnlock::UnlockActions::STAKING)))
             {
                 /* If stake minter is running, stop it */
                 TAO::Ledger::StakeMinter& stakeMinter = TAO::Ledger::StakeMinter::GetInstance();
@@ -133,10 +133,17 @@ namespace TAO
             /* populate unlocked status */
             encoding::json jsonUnlocked;
 
-            jsonUnlocked["mining"] = !session.GetActivePIN().IsNull() && session.GetActivePIN()->CanMine();
-            jsonUnlocked["notifications"] = !session.GetActivePIN().IsNull() && session.GetActivePIN()->ProcessNotifications();
-            jsonUnlocked["staking"] = !session.GetActivePIN().IsNull() && session.GetActivePIN()->CanStake();
-            jsonUnlocked["transactions"] = !session.GetActivePIN().IsNull() && session.GetActivePIN()->CanTransact();
+            jsonUnlocked["mining"] =
+                (session.GetActivePIN() != nullptr && session.GetActivePIN()->CanMine());
+
+            jsonUnlocked["notifications"] =
+                (session.GetActivePIN() != nullptr && session.GetActivePIN()->ProcessNotifications());
+
+            jsonUnlocked["staking"] =
+                (session.GetActivePIN() != nullptr && session.GetActivePIN()->CanStake());
+
+            jsonUnlocked["transactions"] =
+                (session.GetActivePIN() != nullptr && session.GetActivePIN()->CanTransact());
 
             ret["unlocked"] = jsonUnlocked;
             return ret;

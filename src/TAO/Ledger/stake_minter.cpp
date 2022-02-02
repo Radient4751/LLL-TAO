@@ -39,7 +39,7 @@ ________________________________________________________________________________
 #include <Util/include/convert.h>
 #include <Util/include/debug.h>
 #include <Util/include/runtime.h>
-
+#include <Util/types/encrypted_shared_ptr.h>
 
 /* Global TAO namespace. */
 namespace TAO
@@ -400,7 +400,7 @@ namespace TAO
 
 
         /* Creates a new legacy block that the stake minter will attempt to mine via the Proof of Stake process. */
-        bool StakeMinter::CreateCandidateBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user,
+        bool StakeMinter::CreateCandidateBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user,
                                                const SecureString& strPIN)
         {
             /* Reset any prior value of trust score, block age, and stake update amount */
@@ -493,7 +493,7 @@ namespace TAO
 
 
         /* Verify whether or not a signature chain has met the interval requirement */
-        bool StakeMinter::CheckInterval(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user)
+        bool StakeMinter::CheckInterval(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> user)
         {
             static uint32_t nCounter = 0; //Prevents log spam during wait period
             static const uint32_t nMinInterval = MinStakeInterval(block);
@@ -530,7 +530,7 @@ namespace TAO
 
 
         /* Verify no transactions for same signature chain in the mempool */
-        bool StakeMinter::CheckMempool(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user)
+        bool StakeMinter::CheckMempool(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> user)
         {
             static uint32_t nCounter = 0; //Prevents log spam during wait period
 
@@ -561,7 +561,7 @@ namespace TAO
 
 
         /* Attempt to solve the hashing algorithm at the current staking difficulty for the candidate block */
-        bool StakeMinter::HashBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN,
+        bool StakeMinter::HashBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN,
                                     const cv::softdouble nRequired)
         {
             uint64_t nTimeStart = 0;
@@ -650,7 +650,7 @@ namespace TAO
         }
 
 
-        bool StakeMinter::ProcessBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN)
+        bool StakeMinter::ProcessBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN)
         {
             /* Calculate coinstake reward for producer.
              * Reward is based on final block time for block. Block time is updated with each iteration so we
@@ -723,7 +723,7 @@ namespace TAO
 
 
         /* Sign a candidate block after it is successfully mined. */
-        bool StakeMinter::SignBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN)
+        bool StakeMinter::SignBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN)
         {
             /* Sign the submitted block */
             std::vector<uint8_t> vBytes = user->Generate(block.producer.nSequence, strPIN).GetBytes();

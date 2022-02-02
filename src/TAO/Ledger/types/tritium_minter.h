@@ -20,6 +20,7 @@ ________________________________________________________________________________
 #include <TAO/Ledger/types/sigchain.h>
 
 #include <Util/include/allocators.h>
+#include <Util/types/encrypted_shared_ptr.h>
 
 #include <atomic>
 #include <thread>
@@ -133,7 +134,7 @@ namespace TAO
          *  @return true if the coinstake was successfully created
          *
          **/
-        bool CreateCoinstake(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN) override;
+        bool CreateCoinstake(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN) override;
 
 
         /** MintBlock
@@ -144,7 +145,7 @@ namespace TAO
          *  @param[in] strPIN - active pin corresponding to the sig chain
          *
          **/
-        void MintBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN) override;
+        void MintBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN) override;
 
 
         /** CheckBreak

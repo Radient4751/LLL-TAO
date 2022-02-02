@@ -91,7 +91,7 @@ TEST_CASE("Arguments Tests", "[args]")
     TAO::Ledger::ChainState::nBestHeight.store(200);
 
     //check best
-    REQUIRE_FALSE(TAO::Ledger::ChainState::stateBest.load().IsNull());
+    REQUIRE_FALSE(TAO::Ledger::ChainState::stateBest.load());
 
 
     /** Initialize network resources. (Need before RPC/API for WSAStartup call in Windows) **/

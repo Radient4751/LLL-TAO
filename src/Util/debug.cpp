@@ -113,6 +113,19 @@ namespace debug
     /*  Log startup information. */
     void LogStartup(int argc, char** argv)
     {
+        /* Debug output for private mode. */
+        if(config::GetBoolArg("-private", false))
+        {
+            /* Force consensus into testnet if -private is set with no network owner. */
+            log(0, ANSI_COLOR_BRIGHT_RED, "!!!WARNING!!! PRIVATE TESTNET", ANSI_COLOR_RESET);
+            log(0, ANSI_COLOR_BRIGHT_YELLOW, "-private mode runs as a TESTNET.., DO NOT USE FOR PRODUCTION", ANSI_COLOR_RESET);
+            log(0, ANSI_COLOR_BRIGHT_YELLOW, "To run a production network, you must set hybrid=<username> in nexus.conf", ANSI_COLOR_RESET);
+        }
+
+        /* Debug output for hybrid mode. */
+        else if(config::fHybrid.load())
+            log(0, ANSI_COLOR_FUNCTION, "Hybrid Network-id: ", ANSI_COLOR_BRIGHT_GREEN, config::hashNetworkOwner.ToString(), ANSI_COLOR_RESET);
+
         log(0, "");
         log(0, "");
         log(0, "---------------------------------------------------");

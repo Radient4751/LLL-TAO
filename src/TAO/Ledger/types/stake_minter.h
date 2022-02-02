@@ -27,6 +27,7 @@ ________________________________________________________________________________
 
 #include <Util/include/memory.h>
 #include <Util/include/softfloat.h>
+#include <Util/types/encrypted_shared_ptr.h>
 
 #include <atomic>
 
@@ -271,7 +272,7 @@ namespace TAO
          *  @return true if the coinstake was successfully created
          *
          **/
-        virtual bool CreateCoinstake(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN) = 0;
+        virtual bool CreateCoinstake(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN) = 0;
 
 
         /** MintBlock
@@ -287,7 +288,7 @@ namespace TAO
          *  @param[in] strPIN - active pin corresponding to the sig chain
          *
          **/
-        virtual void MintBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN) = 0;
+        virtual void MintBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN) = 0;
 
 
         /** CheckBreak
@@ -400,7 +401,7 @@ namespace TAO
          *  @return true if the candidate block was successfully created
          *
          **/
-        bool CreateCandidateBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN);
+        bool CreateCandidateBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN);
 
 
         /** CalculateWeights
@@ -423,7 +424,7 @@ namespace TAO
          *  @return true if sig chain has met interval requirement
          *
          **/
-        bool CheckInterval(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user);
+        bool CheckInterval(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> user);
 
 
         /** CheckMempool
@@ -439,7 +440,7 @@ namespace TAO
          *  @return true if no transactions pending for sig chain
          *
          **/
-        bool CheckMempool(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user);
+        bool CheckMempool(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> user);
 
 
         /** HashBlock
@@ -462,7 +463,7 @@ namespace TAO
          *  @return true if hashing current block complete and minter should start a new block
          *
          **/
-        bool HashBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN,
+        bool HashBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN,
                        const cv::softdouble nRequired);
 
 
@@ -477,7 +478,7 @@ namespace TAO
          *  @return true if the block passed all process checks and was successfully submitted
          *
          **/
-        bool ProcessBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN);
+        bool ProcessBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN);
 
 
         /** SignBlock
@@ -490,7 +491,7 @@ namespace TAO
          *  @return true if block successfully signed
          *
          **/
-        bool SignBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN);
+        bool SignBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPIN);
 
     };
 

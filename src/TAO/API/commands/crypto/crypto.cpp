@@ -33,6 +33,8 @@ ________________________________________________________________________________
 #include <Util/include/base64.h>
 #include <Util/include/string.h>
 
+#include <Util/types/encrypted_shared_ptr.h>
+
 
 /* Global TAO namespace. */
 namespace TAO
@@ -54,7 +56,7 @@ namespace TAO
             Session& session = Commands::Get<Users>()->GetSession(params);
 
             /* Get the account. */
-            const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user = session.GetAccount();
+            const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> user = session.GetAccount();
             if(!user)
                 throw Exception(-10, "Invalid session ID");
 

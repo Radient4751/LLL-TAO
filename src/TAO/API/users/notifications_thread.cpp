@@ -62,8 +62,8 @@ namespace TAO
             LOCK(NOTIFICATIONS_MUTEX);
 
             /* Add the session if it is not already in the vector*/
-            if(std::find(SESSIONS.begin(), SESSIONS.end(), nSession) == SESSIONS.end() )
-                SESSIONS.push_back(nSession);
+            if(!SESSIONS.count(nSession))
+                SESSIONS.insert(nSession);
 
         }
 
@@ -75,7 +75,8 @@ namespace TAO
             LOCK(NOTIFICATIONS_MUTEX);
 
             /* Remove the session if it is in the vector*/
-            SESSIONS.erase(std::remove(SESSIONS.begin(), SESSIONS.end(), nSession));
+            if(SESSIONS.count(nSession))
+                SESSIONS.erase(nSession);
         }
 
 
@@ -86,7 +87,7 @@ namespace TAO
             LOCK(NOTIFICATIONS_MUTEX);
 
             /* Check if the sessions vector contains the session id */
-            return std::find(SESSIONS.begin(), SESSIONS.end(), nSession) != SESSIONS.end();
+            return SESSIONS.count(nSession);
         }
 
 
@@ -121,27 +122,29 @@ namespace TAO
                 if(TAO::Ledger::ChainState::Synchronizing())
                     continue;
 
-                /* Iterate through all sessions */
-                for(const auto nSession : SESSIONS)
                 {
-                    try
-                    {
-                        /* Ensure that the user is logged, in, wallet unlocked, and unlocked for notifications. */
-                        if(GetSessionManager().Has(nSession))
-                        {
-                            Session& session = GetSessionManager().Get(nSession, false);
-                            if(!session.Locked() && session.CanProcessNotifications())
-                                auto_process_notifications(session.ID());
-                        }
+                    LOCK(NOTIFICATIONS_MUTEX);
 
-                    }
-                    catch(const std::exception& e)
+                    /* Iterate through all sessions */
+                    for(const auto nSession : SESSIONS)
                     {
-                        /* Log the error and attempt to continue processing */
-                        debug::error(FUNCTION, e.what());
+                        try
+                        {
+                            /* Ensure that the user is logged, in, wallet unlocked, and unlocked for notifications. */
+                            if(SESSIONS.count(nSession))
+                            {
+                                Session& session = GetSessionManager().Get(nSession, false);
+                                if(!session.Locked() && session.CanProcessNotifications())
+                                    auto_process_notifications(session.ID());
+                            }
+                        }
+                        catch(const std::exception& e)
+                        {
+                            /* Log the error and attempt to continue processing */
+                            debug::error(FUNCTION, e.what());
+                        }
                     }
                 }
-
             }
         }
 
@@ -180,6 +183,9 @@ namespace TAO
                 }
                 catch(const Exception& ex)
                 {
+                    /* Log the error */
+                    debug::error(FUNCTION, ex.what());
+
                     /* Absorb certain errors and write them to the log instead */
                     switch (ex.id)
                     {
@@ -187,7 +193,7 @@ namespace TAO
                     case -255: // Cannot process notifications until peers are connected
                     case -256: // Cannot process notifications whilst synchronizing
                     {
-                        debug::log(2, FUNCTION, ex.what());
+                        debug::log(0, FUNCTION, ex.what());
 
                         /* Ensure we don't retry */
                         fRetry = false;
@@ -196,7 +202,7 @@ namespace TAO
                     }
                     case -257: // Contract failed peer validation
                     {
-                        debug::log(2, FUNCTION, ex.what());
+                        debug::log(0, FUNCTION, ex.what());
 
                         /* Immediately retry processing if a contract failed peer validation, as it will now be suppressed */
                         fRetry = true;

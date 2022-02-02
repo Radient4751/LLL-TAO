@@ -21,6 +21,7 @@ ________________________________________________________________________________
 #include <Util/include/mutex.h>
 #include <Util/include/memory.h>
 #include <Util/types/lock_shared_ptr.h>
+#include <Util/types/encrypted_shared_ptr.h>
 
 #include <LLC/include/random.h>
 
@@ -114,7 +115,7 @@ namespace TAO::API
          *  Returns the active PIN for this session.
          *
          **/
-        const memory::encrypted_ptr<TAO::Ledger::PinUnlock>& GetActivePIN() const;
+        const util::atomic::encrypted_shared_ptr<TAO::Ledger::PinUnlock> GetActivePIN() const;
 
 
         /** ClearActivePIN
@@ -219,7 +220,7 @@ namespace TAO::API
          *  @return the signature chain.
          *
          **/
-        const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& GetAccount() const;
+        const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> GetAccount() const;
 
 
         /** GetNetworkKey
@@ -231,7 +232,7 @@ namespace TAO::API
         *  @return the private key for the auth public key
         *
         **/
-        memory::encrypted_ptr<memory::encrypted_type<uint512_t>>& GetNetworkKey(const uint256_t& nSession) const;
+        util::atomic::encrypted_shared_ptr<memory::encrypted_type<uint512_t>> GetNetworkKey(const uint256_t& nSession) const;
 
 
         /** GetAuthAttempts
@@ -286,7 +287,7 @@ namespace TAO::API
     private:
 
         /** The mutex for locking. **/
-        mutable std::mutex MUTEX;
+        mutable std::recursive_mutex MUTEX;
 
 
         /** The session ID **/
@@ -306,15 +307,15 @@ namespace TAO::API
 
 
         /** Encrypted pointer of signature chain **/
-        memory::encrypted_ptr<TAO::Ledger::SignatureChain> pSigChain;
+        util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> pSigChain;
 
 
         /** The active pin for sessionless API use **/
-        memory::encrypted_ptr<TAO::Ledger::PinUnlock> pActivePIN;
+        util::atomic::encrypted_shared_ptr<TAO::Ledger::PinUnlock> pActivePIN;
 
 
         /** Cached network private key.  NOTE this is mutable as it is lazy loaded **/
-        mutable memory::encrypted_ptr<memory::encrypted_type<uint512_t>> nNetworkKey;
+        mutable util::atomic::encrypted_shared_ptr<memory::encrypted_type<uint512_t>> pNetworkKey;
 
     };
 

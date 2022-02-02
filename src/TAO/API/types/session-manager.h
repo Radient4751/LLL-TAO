@@ -126,7 +126,7 @@ namespace TAO::API
 
 
         /* Mutex to control access to the session map */
-        std::mutex MUTEX;
+        std::recursive_mutex MUTEX;
 
 
     private:

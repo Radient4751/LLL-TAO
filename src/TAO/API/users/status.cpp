@@ -43,7 +43,7 @@ namespace TAO
             /* The callers genesis */
             uint256_t hashGenesis = session.GetAccount()->Genesis();
 
-            /* Flag indicating whether to include the username in the response. If this is in multiuser mode then we 
+            /* Flag indicating whether to include the username in the response. If this is in multiuser mode then we
                will only return the username if they have provided a valid pin */
             bool fUsername = false;
 
@@ -52,7 +52,7 @@ namespace TAO
                 /* Authenticate the users credentials */
                 if(!Commands::Get<Users>()->Authenticate(params))
                     throw Exception(-139, "Invalid credentials");
-                
+
                 /* Pin is valid so include the username */
                 fUsername = true;
             }
@@ -65,11 +65,11 @@ namespace TAO
             /* populate response */
             if(fUsername)
                 ret["username"] = session.GetAccount()->UserName().c_str();
-            
+
             /* Add the genesis */
             ret["genesis"] = hashGenesis.GetHex();
 
-            /* Work out whether the sig chain creation is confirmed.  For this we just need to check the confirmatations on the 
+            /* Work out whether the sig chain creation is confirmed.  For this we just need to check the confirmatations on the
                transaction that was used for login */
             uint32_t nConfirms = 0;
             LLD::Ledger->ReadConfirmations(session.hashAuth, nConfirms);
@@ -85,7 +85,7 @@ namespace TAO
 
             /* flag indicating recovery has been set */
             bool fRecovery = false;
-            
+
             /* Read the last transaction for the sig chain */
             uint512_t hashLast = 0;
             if(LLD::Ledger->ReadLast(hashGenesis, hashLast, TAO::Ledger::FLAGS::MEMPOOL))
@@ -118,20 +118,27 @@ namespace TAO
             /* Get any legacy transactions . */
             std::vector<std::pair<std::shared_ptr<Legacy::Transaction>, uint32_t>> vLegacyTx;
             GetOutstanding(hashGenesis, false, vLegacyTx);
-            
+
             ret["notifications"] = vContracts.size() + vLegacyTx.size();
 
 
             /* populate unlocked status */
             encoding::json jsonUnlocked;
 
-            jsonUnlocked["mining"] = !session.GetActivePIN().IsNull() && session.CanMine();
-            jsonUnlocked["notifications"] = !session.GetActivePIN().IsNull() && session.CanProcessNotifications();
-            jsonUnlocked["staking"] = !session.GetActivePIN().IsNull() && session.CanStake();
-            jsonUnlocked["transactions"] = !session.GetActivePIN().IsNull() && session.CanTransact();
+            jsonUnlocked["mining"] =
+                (session.GetActivePIN() != nullptr && session.CanMine());
+
+            jsonUnlocked["notifications"] =
+                (session.GetActivePIN() != nullptr && session.CanProcessNotifications());
+
+            jsonUnlocked["staking"] =
+                (session.GetActivePIN() != nullptr && session.CanStake());
+
+            jsonUnlocked["transactions"] =
+                (session.GetActivePIN() != nullptr && session.CanTransact());
 
             ret["unlocked"] = jsonUnlocked;
-            
+
             return ret;
         }
     }

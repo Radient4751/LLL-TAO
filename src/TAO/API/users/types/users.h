@@ -29,6 +29,8 @@ ________________________________________________________________________________
 #include <Util/include/mutex.h>
 #include <Util/include/memory.h>
 
+#include <Util/types/encrypted_shared_ptr.h>
+
 #include <condition_variable>
 #include <thread>
 #include <atomic>
@@ -56,6 +58,9 @@ namespace TAO::API
 
 
     public:
+
+
+        mutable std::recursive_mutex MUTEX;
 
 
         /** Default Constructor. **/
@@ -525,7 +530,7 @@ namespace TAO::API
         *  @return True of the transaction was successfully created
         *
         **/
-        static bool CreateTransaction(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
+        static bool CreateTransaction(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
                            TAO::Ledger::Transaction& tx, const uint8_t nScheme = TAO::Ledger::SIGNATURE::RESERVED);
 
 
@@ -666,7 +671,7 @@ namespace TAO::API
         *  @return void.
         *
         **/
-        void update_crypto_keys(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPin, TAO::Ledger::Transaction& tx );
+        void update_crypto_keys(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& strPin, TAO::Ledger::Transaction& tx );
 
 
     };

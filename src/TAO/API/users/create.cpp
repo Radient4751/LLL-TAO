@@ -34,6 +34,7 @@ ________________________________________________________________________________
 #include <TAO/Register/include/create.h>
 
 #include <Util/include/hex.h>
+#include <Util/types/encrypted_shared_ptr.h>
 
 /* Global TAO namespace. */
 namespace TAO::API
@@ -101,7 +102,8 @@ namespace TAO::API
                                const SecureString& strPin, TAO::Ledger::Transaction& tx)
     {
         /* Generate the signature chain. */
-        memory::encrypted_ptr<TAO::Ledger::SignatureChain> user = new TAO::Ledger::SignatureChain(strUsername, strPassword);
+        util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> user =
+            new TAO::Ledger::SignatureChain(strUsername, strPassword);
 
         /* Get the Genesis ID. */
         uint256_t hashGenesis = user->Genesis();
@@ -130,17 +132,11 @@ namespace TAO::API
 
         /* Check for duplicates in ledger db. */
         if(LLD::Ledger->HasGenesis(hashGenesis) || TAO::Ledger::mempool.Has(hashGenesis))
-        {
-            user.free();
             throw Exception(-130, "Account already exists");
-        }
 
         /* Create the transaction. */
         if(!Users::CreateTransaction(user, strPin, tx))
-        {
-            user.free();
             throw Exception(-17, "Failed to create transaction");
-        }
 
         TAO::Register::Address hashRegister;
 
@@ -198,20 +194,11 @@ namespace TAO::API
 
         /* Calculate the prestates and poststates. */
         if(!tx.Build())
-        {
-            user.free();
             throw Exception(-30, "Operations failed to execute");
-        }
 
         /* Sign the transaction. */
         if(!tx.Sign(user->Generate(tx.nSequence, strPin)))
-        {
-            user.free();
             throw Exception(-31, "Ledger failed to sign transaction");
-        }
-
-        /* Free the sigchain. */
-        user.free();
 
         /* Execute the operations layer. */
         if(!TAO::Ledger::mempool.Accept(tx))

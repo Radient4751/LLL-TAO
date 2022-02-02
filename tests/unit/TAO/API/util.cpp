@@ -12,6 +12,7 @@
 #include <Util/include/json.h>
 #include <Util/include/config.h>
 #include <Util/include/base64.h>
+#include <Util/types/encrypted_shared_ptr.h>
 
 #include <unit/catch2/catch.hpp>
 
@@ -45,7 +46,7 @@ bool GenerateBlock()
         return debug::error("no generate parameters");
 
     /* Get the account. */
-    memory::encrypted_ptr<TAO::Ledger::SignatureChain> user =
+    util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> user =
         new TAO::Ledger::SignatureChain("generate", config::GetArg("-generate", "").c_str());
 
     /* Get the genesis ID. */

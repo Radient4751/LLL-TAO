@@ -23,6 +23,8 @@ ________________________________________________________________________________
 
 #include <TAO/Operation/include/enum.h>
 
+#include <Util/types/encrypted_shared_ptr.h>
+
 /* Global TAO namespace. */
 namespace TAO
 {
@@ -114,7 +116,7 @@ namespace TAO
             }
 
             /* Create sig chain based on the new credentials */
-            memory::encrypted_ptr<TAO::Ledger::SignatureChain> user = new TAO::Ledger::SignatureChain(strUsername, strPassword);
+            util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> user = new TAO::Ledger::SignatureChain(strUsername, strPassword);
 
             /* Validate the recovery seed is correct.  We do this at this stage so that we can return a helpful error response
                from the API call, rather than waiting for mempool::Accept to fail  */
@@ -124,10 +126,7 @@ namespace TAO
             /* Create the update transaction */
             TAO::Ledger::Transaction tx;
             if(!Users::CreateTransaction(user, strPin, tx))
-            {
-                user.free();
                 throw Exception(-17, "Failed to create transaction");
-            }
 
             /* Now set the new credentials */
             tx.NextHash(user->Generate(tx.nSequence + 1, strPassword, strPin));
@@ -137,30 +136,18 @@ namespace TAO
 
             /* Calculate the prestates and poststates. */
             if(!tx.Build())
-            {
-                user.free();
                 throw Exception(-30, "Operations failed to execute");
-            }
 
             /* Set the key type */
             tx.nKeyType = nKeyType;
 
             /* Sign the transaction with private key generated from the recovery seed. */
             if(!tx.Sign(user->Generate(strRecovery)))
-            {
-                user.free();
                 throw Exception(-31, "Ledger failed to sign transaction");
-            }
 
             /* Execute the operations layer. */
             if(!TAO::Ledger::mempool.Accept(tx))
-            {
-                user.free();
                 throw Exception(-32, "Failed to accept");
-            }
-
-            /* Free the sigchain. */
-            user.free();
 
             /* Build a JSON response object. */
             jsonRet["genesis"]   = tx.hashGenesis.ToString();

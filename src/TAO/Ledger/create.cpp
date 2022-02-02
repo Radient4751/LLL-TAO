@@ -49,6 +49,8 @@ ________________________________________________________________________________
 #include <Util/include/debug.h>
 #include <Util/include/runtime.h>
 
+#include <Util/types/encrypted_shared_ptr.h>
+
 /* Global TAO namespace. */
 namespace TAO::Ledger
 {
@@ -61,7 +63,7 @@ namespace TAO::Ledger
 
 
     /* Create a new transaction object from signature chain. */
-    bool CreateTransaction(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
+    bool CreateTransaction(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
                            TAO::Ledger::Transaction& tx, const uint8_t nScheme)
     {
         /* Get the genesis id of the sigchain. */
@@ -153,9 +155,13 @@ namespace TAO::Ledger
         else
             tx.nVersion = nCurrent - 1;
 
-        /* Genesis Transaction. */
-        tx.NextHash(user->Generate(tx.nSequence + 1, pin));
         tx.hashGenesis = user->Genesis();
+
+        /* Genesis Transaction. */
+        debug::log(0, "Calculating next hash");
+
+        tx.NextHash(user->Generate(tx.nSequence + 1, pin));
+        
 
         return true;
     }
@@ -364,7 +370,7 @@ namespace TAO::Ledger
 
 
     /* Create a new block object from the chain. */
-    bool CreateBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
+    bool CreateBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
         const uint32_t nChannel, TAO::Ledger::TritiumBlock &rBlockRet, const uint64_t nExtraNonce, Legacy::Coinbase *pCoinbaseRecipients)
     {
         /* Get the session */
@@ -472,7 +478,7 @@ namespace TAO::Ledger
     }
 
     /* Create a producer transaction object from signature chain. */
-    bool CreateProducer(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
+    bool CreateProducer(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
                            TAO::Ledger::Transaction &rProducer,
                            const TAO::Ledger::BlockState& stateBest,
                            const uint32_t nBlockVersion,
@@ -621,7 +627,7 @@ namespace TAO::Ledger
 
 
     /* Create a new Proof of Stake (channel 0) block object from the chain. */
-    bool CreateStakeBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
+    bool CreateStakeBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
                           TAO::Ledger::TritiumBlock& block, const bool fGenesis)
     {
         /* Lock this user's sigchain. */
@@ -752,7 +758,7 @@ namespace TAO::Ledger
             return;
 
         /* Get the account. */
-        memory::encrypted_ptr<TAO::Ledger::SignatureChain> user =
+        util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain> user =
             new TAO::Ledger::SignatureChain("generate", config::GetArg("-generate", "").c_str());
 
         /* Get the genesis ID. */

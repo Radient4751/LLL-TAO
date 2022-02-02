@@ -22,6 +22,7 @@ ________________________________________________________________________________
 #include <TAO/Ledger/types/sigchain.h>
 
 #include <Util/include/allocators.h>
+#include <Util/types/encrypted_shared_ptr.h>
 
 #include <condition_variable>
 
@@ -47,7 +48,7 @@ namespace TAO
          *  @param[in] nScheme The key scheme to be used.
          *
          **/
-        bool CreateTransaction(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
+        bool CreateTransaction(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
                                TAO::Ledger::Transaction& tx, const uint8_t nScheme = TAO::Ledger::SIGNATURE::RESERVED);
 
 
@@ -65,7 +66,7 @@ namespace TAO
          *  @param[in] pCoinbaseRecipients The coinbase recipients, if any.
          *
          **/
-        bool CreateProducer(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
+        bool CreateProducer(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
                                TAO::Ledger::Transaction& tx,
                                const TAO::Ledger::BlockState& stateBest,
                                const uint32_t nBlockVersion,
@@ -114,7 +115,7 @@ namespace TAO
          *  @param[in] pCoinbaseRecipients The coinbase recipients, if any.
          *
          **/
-        bool CreateBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
+        bool CreateBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
                          const uint32_t nChannel, TAO::Ledger::TritiumBlock& block, const uint64_t nExtraNonce = 0,
                          Legacy::Coinbase *pCoinbaseRecipients = nullptr);
 
@@ -133,7 +134,7 @@ namespace TAO
          *  @param[in] fGenesis Set true if staking for Genesis, false if staking for Trust
          *
          **/
-        bool CreateStakeBlock(const memory::encrypted_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
+        bool CreateStakeBlock(const util::atomic::encrypted_shared_ptr<TAO::Ledger::SignatureChain>& user, const SecureString& pin,
                               TAO::Ledger::TritiumBlock& block, const bool fGenesis = false);
 
 

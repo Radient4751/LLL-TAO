@@ -20,7 +20,6 @@ ________________________________________________________________________________
 
 namespace util::atomic
 {
-
 	/** lock_shared_ptr
 	 *
 	 *  Pointer with member access protected with a mutex.

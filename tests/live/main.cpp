@@ -187,10 +187,81 @@ bool Build(const std::vector<uint8_t> vByteCode, TAO::Operation::Contract &rCont
 }
 
 
+#include <Util/types/encrypted_shared_ptr.h>
+
+struct TestStruct : public memory::encrypted
+{
+    uint64_t a;
+    uint64_t b;
+
+    uint256_t hash;
+
+
+    /* Special method for encrypting specific data types inside class. */
+    void Encrypt()
+    {
+        encrypt(a);
+        encrypt(b);
+        encrypt(hash);
+    }
+};
+
+
+void ThreadCrypt(util::atomic::encrypted_shared_ptr<TestStruct> pData2)
+{
+    debug::warning(FUNCTION, "starting the thread");
+
+    for(int i = 0; i < 10000; ++i)
+    {
+        pData2->a++;
+        pData2->b++;
+
+        pData2->hash++;
+
+    }
+
+    debug::log(0, VARIABLE(pData2->a), " | ", VARIABLE(pData2->b), " | ", VARIABLE(pData2->hash.ToString()));
+
+    pData2 = util::atomic::encrypted_shared_ptr<TestStruct>(new TestStruct());
+
+    for(int i = 0; i < 1000; ++i)
+    {
+        pData2->a++;
+        pData2->b++;
+
+        pData2->hash++;
+    }
+
+    debug::log(0, VARIABLE(pData2->a), " | ", VARIABLE(pData2->b), " | ", VARIABLE(pData2->hash.ToString()));
+
+    pData2 = nullptr;
+}
+
+
+
+
 
 /* This is for prototyping new code. This main is accessed by building with LIVE_TESTS=1. */
 int main(int argc, char** argv)
 {
+    {
+        util::atomic::encrypted_shared_ptr<TestStruct> pData = util::atomic::encrypted_shared_ptr<TestStruct>(new TestStruct());
+
+        std::thread t1 = std::thread(ThreadCrypt, pData);
+        std::thread t2 = std::thread(ThreadCrypt, pData);
+        std::thread t3 = std::thread(ThreadCrypt, pData);
+        std::thread t4 = std::thread(ThreadCrypt, pData);
+        t1.join();
+        t2.join();
+        t3.join();
+        t4.join();
+
+
+        debug::log(0, "Finished waiting for threads");
+    }
+
+    return 0;
+
     TAO::Operation::Contract tContract;
 
     //debug::log(0, "First param is ", ssParams.find(0, uint8_t(TAO::Operation::OP::TYPES::UINT256_T)).ToString());
